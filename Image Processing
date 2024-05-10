@@ -1,0 +1,50 @@
+clear all
+close all
+fpath='C:\Users\91998\Desktop\new dataset'
+data=fullfile(fpath,'datasetp')
+tdata=imageDatastore(data,'IncludeSubfolders',true,'LabelSource','foldernames')
+count=tdata.countEachLabel;
+
+%split data
+[trainingdata testdata]=splitEachLabel(tdata,0.8,'randomized');
+
+%load pretrained network
+net=alexnet;
+layers=[imageInputLayer([227 227])
+    net(2:end-3)
+    fullyConnectedLayer(3)
+    softmaxLayer()
+    classificationLayer()
+    ]
+opt=trainingOptions("sgdm",'Maxepoch',20,'InitialLearnRate',0.1);
+%opt=trainingOptions("sgdm",'Maxepoch',20,'InitialLearnRate',0.1,'Plots','training-progress');
+training=trainNetwork(trainingdata,layers,opt);
+
+save training
+analyze
+analyzeNetwork(Training)
+
+a=imread('C:\Users\91998\Desktop\new dataset\B\B (596).jpg')
+a=rgb2gray(a);
+a=imresize(a,[227 227]);
+[out,score]=classify(training,a);
+figure,
+imshow(a)
+title(string(out))
+
+load training.mat
+
+allclass=[];
+for i=1:length(testdata.Labels)
+    I=readimage(testdata,i);
+    class=classify(training,I);
+    allclass=[allclass class];
+    % figure(1),
+    % subplot(4,4,i)
+    % imshow(I)
+    % title(char(class))
+end    
+Predicted=allclass;
+figure,
+plotconfusion(testdata.Labels,Predicted')
+%accuracy=mean(Predicted==testdata.Labels);
